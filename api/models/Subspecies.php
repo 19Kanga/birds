@@ -1,43 +1,41 @@
 <?php
-class Species {
+class Subspecies {
     private $conn;
-    private $table = "species";
+    private $table = "subspecies";
 
     public function __construct($db) {
         $this->conn = $db;
     }
-
-    // Créer une espèce
+   
     public function create($data) {
+
         $stmt = $this->conn->prepare("INSERT INTO {$this->table}
-            (name, scienticname, origin, size, lifespan, pu)
-            VALUES (:name, :scienticname, :origin, :size, :lifespan, :pu)");
+            (name, speciesId, characteristiq)
+            VALUES (:name, :speciesId, :characteristiq)");
 
         return $stmt->execute($data);
     }
-
-    // Récupérer toutes les espèces
+ 
     public function getAll() {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} order by id desc");
+        $stmt = $this->conn->prepare("SELECT r.*, s.name as parent FROM {$this->table} r,species s WHERE r.speciesId=s.id order by id desc");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getByUUUID($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE uuid = :uuid");
+        $stmt = $this->conn->prepare("SELECT r.*, s.name as parent FROM {$this->table} r,species s WHERE r.uuid = :uuid and r.speciesId=s.id");
         $stmt->bindParam(':uuid', $id);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    // Récupérer une espèce par ID
+   
     public function getById($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = :id");
+        $stmt = $this->conn->prepare("SELECT r.*, s.name as parent FROM {$this->table} r,species s WHERE r.id = :id and r.speciesId=s.id");
         $stmt->bindParam(':id', $id);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    // Mettre à jour une espèce
+  
     public function update($id,$fields) {
         $setParts = [];
         $values = [];

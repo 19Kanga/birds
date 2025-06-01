@@ -1,10 +1,10 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../controllers/SpeciesController.php';
+require_once __DIR__ . '/../controllers/BreedingController.php';
 
 $db = new Database();
 $conn = $db->getConnection();
-$speciesController = new SpeciesController($conn);
+$speciesController = new BreedingController($conn);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -12,9 +12,9 @@ $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
     case 'GET':
         if (isset($_GET['id'])) {
-            $speciesController->getById($_GET['id']);
+            $speciesController->show($_GET['id']);
         } else {
-            $speciesController->getAll();
+            $speciesController->index();
         }
         break;
 
@@ -42,3 +42,4 @@ switch ($method) {
         echo json_encode(['message' => 'Méthode non autorisée']);
         break;
 }
+

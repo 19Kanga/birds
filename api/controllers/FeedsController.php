@@ -1,14 +1,14 @@
 <?php
-require_once __DIR__ . '/../models/Species.php';
+require_once __DIR__ . '/../models/Feeds.php';
 require_once __DIR__ . '/../utils/generateUUId.php';
 require_once __DIR__ . '/../utils/response.php';
 
-class SpeciesController {
-    private $species;
+class FeedsController {
+    private $feed;
     private $pdo;
 
     public function __construct($db) {
-        $this->species = new Species($db);
+        $this->feed = new Feeds($db);
         $this->pdo=$db;
     }
 
@@ -16,29 +16,14 @@ class SpeciesController {
     public function create($data) {
         try {
             $this->pdo->beginTransaction();
-           $this->species->create($data);
+           $this->feed->create($data);
+
             $id = (int) $this->pdo->lastInsertId();
-      
-            $uuid = generateUUID($id,"SP");
-         
-            $stmt = $this->pdo->prepare("UPDATE species SET uuid = :uuid WHERE id = :id");
-            $stmt->execute([
-                'uuid' => $uuid,
-                'id'   => $id
-            ]);
-    
+            $uuid = generateUUID($id,"FD");
+            $this->pdo->prepare("UPDATE feeds  SET uuid = :uuid WHERE id = :id")->execute(['uuid' => $uuid, 'id' => $id]);
             $this->pdo->commit();
           
-            echo json_encode(["status"=>"success","message"=>true,"result"=>[
-                'id'        => $id,
-                'uuid'      => $uuid,
-                'name'      => $data['name'],
-                'scienticname'     => $data['scienticname'],
-                'origin'     => $data['origin'],
-                'size'    => $data['size'],
-                'lifespan'    => $data['lifespan'],
-                'pu'    => $data['pu'],
-            ]]);
+            echo json_encode(["status"=>"success","message"=>true,"result"=>$this->feed->getById(id: $id)]);
     
         } catch (PDOException $e) {
             echo json_encode(["error"=>"success","result"=>[]]);
@@ -49,16 +34,15 @@ class SpeciesController {
 
     // Obtenir toutes les espèces
     public function getAll() {
-        $speciesList = $this->species->getAll();
-        // echo json_encode($speciesList);
-        response("success",true,$speciesList);
+        $feedList = $this->feed->getAll();
+        response("success",true,$feedList);
     }
 
     // Obtenir une espèce par ID
     public function getById($id) {
-        $species = $this->species->getById($id);
-        if ($species) {
-            response("success",true,$species);
+        $feeds = $this->feed->getById($id);
+        if ($feeds) {
+            response("success",true,$feeds);
         } else {
             http_response_code(404);
             response("error",false,"");
@@ -71,11 +55,13 @@ class SpeciesController {
         $fields=[];
         $allowedFields = [
             "name",
-            "scienticname",
-            "origin" ,
-            "size",
-            "lifespan",
-            "pu"
+            "categorieId",
+            "stock" ,
+            "unit",
+            "minstock",
+            "expirydate",
+            "notes",
+            "status"
         ];
     
         foreach ($allowedFields as $field) {
@@ -84,8 +70,8 @@ class SpeciesController {
             }
         }
         
-        if ($this->species->update($id,$fields)) {
-            $species = $this->species->getById($id);
+        if ($this->feed->update($id,$fields)) {
+            $species = $this->feed->getById($id);
             response("success",true,$species);
         } else {
             http_response_code(500);
@@ -95,7 +81,7 @@ class SpeciesController {
 
     // Supprimer une espèce
     public function delete($id) {
-        if ($this->species->delete($id)) {
+        if ($this->feed->delete($id)) {
             response("success",true,intval($id));
         } else {
             http_response_code(500);

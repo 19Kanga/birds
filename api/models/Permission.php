@@ -7,7 +7,6 @@ class Permission {
         $this->conn = $db;
     }
 
-    // Vérifier si le nom de la permission existe déjà
     private function permissionExists($name) {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE name = :name LIMIT 1");
         $stmt->bindParam(':name', $name);
@@ -15,9 +14,7 @@ class Permission {
         return $stmt->rowCount() > 0;
     }
 
-    // Créer une permission
     public function create($data) {
-        // Validation : vérifier si le nom de la permission existe déjà
         if ($this->permissionExists($data['name'])) {
             return false;
         }
@@ -26,7 +23,6 @@ class Permission {
         return $stmt->execute($data);
     }
 
-    // Mettre à jour une permission
     public function update($data) {
         // Validation : vérifier si le nom de la permission existe déjà
         if ($this->permissionExists($data['name'])) {
@@ -36,8 +32,7 @@ class Permission {
         $stmt = $this->conn->prepare("UPDATE {$this->table} SET name = :name WHERE id = :id");
         return $stmt->execute($data);
     }
-
-    // Récupérer toutes les permissions
+   
     public function getAll() {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->table}");
         $stmt->execute();

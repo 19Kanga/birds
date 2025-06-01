@@ -32,9 +32,14 @@ class RoleHasPermissionController {
 
     // Récupérer toutes les permissions pour chaque rôle
     public function getPermissions() {
-        // $permissions = $this->roleHasPermission->getAllPermition($id);
         $permissions = $this->roleHasPermission->getAllPermissions();
-        // error_log(json_encode($permissions));
         echo json_encode(["status"=>true,"result"=>$permissions]);
     }
+
+    // public function getPermissionById($id) {
+    //     // $permissions = $this->roleHasPermission->getAllPermition($id);
+    //     $permissions = $this->roleHasPermission->getAllPermissions();
+    //     // error_log(json_encode($permissions));
+    //     echo json_encode(["status"=>true,"result"=>$permissions]);
+    // }
 }

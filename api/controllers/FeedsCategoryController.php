@@ -1,14 +1,14 @@
 <?php
-require_once __DIR__ . '/../models/Species.php';
+require_once __DIR__ . '/../models/FeedsCategory.php';
 require_once __DIR__ . '/../utils/generateUUId.php';
 require_once __DIR__ . '/../utils/response.php';
 
-class SpeciesController {
-    private $species;
+class FeedsCategoryController {
+    private $subspecies;
     private $pdo;
 
     public function __construct($db) {
-        $this->species = new Species($db);
+        $this->subspecies = new FeedsCategory($db);
         $this->pdo=$db;
     }
 
@@ -16,32 +16,25 @@ class SpeciesController {
     public function create($data) {
         try {
             $this->pdo->beginTransaction();
-           $this->species->create($data);
+           $this->subspecies->create($data);
             $id = (int) $this->pdo->lastInsertId();
       
-            $uuid = generateUUID($id,"SP");
+            $uuid = generateUUID($id,"FC");
          
-            $stmt = $this->pdo->prepare("UPDATE species SET uuid = :uuid WHERE id = :id");
+            $stmt = $this->pdo->prepare("UPDATE feedscategory SET uuid = :uuid WHERE id = :id");
             $stmt->execute([
                 'uuid' => $uuid,
                 'id'   => $id
             ]);
-    
+            
             $this->pdo->commit();
+            $result= $this->subspecies->getById($id);
           
-            echo json_encode(["status"=>"success","message"=>true,"result"=>[
-                'id'        => $id,
-                'uuid'      => $uuid,
-                'name'      => $data['name'],
-                'scienticname'     => $data['scienticname'],
-                'origin'     => $data['origin'],
-                'size'    => $data['size'],
-                'lifespan'    => $data['lifespan'],
-                'pu'    => $data['pu'],
-            ]]);
+           response("success",true,$result);
     
         } catch (PDOException $e) {
-            echo json_encode(["error"=>"success","result"=>[]]);
+            // echo json_encode(["status"=>"error","","result"=>[]]);
+            response("error",false,[]);
             $this->pdo->rollBack();
             throw $e;
         }
@@ -49,16 +42,16 @@ class SpeciesController {
 
     // Obtenir toutes les espèces
     public function getAll() {
-        $speciesList = $this->species->getAll();
+        $subSpeciesList = $this->subspecies->getAll();
         // echo json_encode($speciesList);
-        response("success",true,$speciesList);
+        response("success",true,$subSpeciesList);
     }
 
     // Obtenir une espèce par ID
     public function getById($id) {
-        $species = $this->species->getById($id);
-        if ($species) {
-            response("success",true,$species);
+        $subspecies = $this->subspecies->getById($id);
+        if ($subspecies) {
+            response("success",true,$subspecies);
         } else {
             http_response_code(404);
             response("error",false,"");
@@ -67,15 +60,9 @@ class SpeciesController {
 
     // Mettre à jour une espèce
     public function update($id,$data) {
- 
         $fields=[];
         $allowedFields = [
-            "name",
-            "scienticname",
-            "origin" ,
-            "size",
-            "lifespan",
-            "pu"
+            "name"
         ];
     
         foreach ($allowedFields as $field) {
@@ -83,10 +70,9 @@ class SpeciesController {
                 $fields[$field] = $data[$field];
             }
         }
-        
-        if ($this->species->update($id,$fields)) {
-            $species = $this->species->getById($id);
-            response("success",true,$species);
+        if ($this->subspecies->update($id,$fields)) {
+            $subspecies = $this->subspecies->getById($id);
+            response("success",true,$subspecies);
         } else {
             http_response_code(500);
             response("error",false,"");
@@ -95,7 +81,7 @@ class SpeciesController {
 
     // Supprimer une espèce
     public function delete($id) {
-        if ($this->species->delete($id)) {
+        if ($this->subspecies->delete($id)) {
             response("success",true,intval($id));
         } else {
             http_response_code(500);

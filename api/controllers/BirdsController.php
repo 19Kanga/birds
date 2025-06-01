@@ -1,47 +1,36 @@
 <?php
-require_once __DIR__ . '/../models/Cage.php';
+require_once __DIR__ . '/../models/Birds.php';
 require_once __DIR__ . '/../utils/generateUUId.php';
 require_once __DIR__ . '/../utils/response.php';
 
-class CageController {
-    private $cage;
+class BirdsController {
+    private $birds;
     private $pdo;
 
     public function __construct($db) {
-        $this->cage = new Cage($db);
+        $this->birds = new Birds($db);
         $this->pdo= $db;
     }
 
-    // Créer une cage
     public function create($data) {
         try {
             $this->pdo->beginTransaction();
-           $this->cage->create($data);
+           $this->birds->create($data);
             $id = (int) $this->pdo->lastInsertId();
       
-            $uuid = generateUUID($id,"CG");
+            $uuid = generateUUID($id,"B");
          
-            $stmt = $this->pdo->prepare("UPDATE cages SET uuid = :uuid WHERE id = :id");
+            $stmt = $this->pdo->prepare("UPDATE birds SET uuid = :uuid WHERE id = :id");
             $stmt->execute([
                 'uuid' => $uuid,
                 'id'   => $id
             ]);
     
 
-            $result= $this->cage->getById($id);
+            $result= $this->birds->getById($id);
             $this->pdo->commit();
-          
-            echo json_encode(["status"=>"success","message"=>true,"result"=>[
-                'id'        => $id,
-                'uuid'      => $uuid,
-                'name'      => $data['name'],
-                'emplacement'     => $data['emplacement'],
-                'capacity'     => $data['capacity'],
-                'status'     => $data['status'],
-                'notes'    => $data['notes'],
-                'createdAt'    => $result['createdAt'],
-                'updatedAt'    => $result['updatedAt'],
-            ]]);
+
+            response("success",true,$result);
     
         } catch (PDOException $e) {
             echo json_encode(["error"=>"success","result"=>[]]);
@@ -50,34 +39,34 @@ class CageController {
         }
     }
 
-    // Obtenir toutes les cages
     public function getAll() {
-        $cageList = $this->cage->getAll();
-        response("success",true,$cageList);
+        $birdsList = $this->birds->getAll();
+        response("success",true,$birdsList);
     }
 
-    // Obtenir une cage par ID
     public function getById($id) {
-        $cage = $this->cage->getById($id);
-        if ($cage) {
-            response("success",true,$cage);
+        $bird = $this->birds->getById($id);
+        if ($bird) {
+            response("success",true,$bird);
         } else {
             http_response_code(404);
             response("error",'Cage non trouvée',"");
         }
     }
 
-    // Mettre à jour une cage
     public function update($id,$data) {
-
         $fields=[];
         $allowedFields = [
             "name",
-            "capacity",
-            "emplacement" ,
+            "speciesId",
+            "subSpeciesId" ,
+            "cageId",
+            "gender",
+            "old",
+            "type",
             "status",
-            "typeCage",
-            "notes"
+            "weight",
+            "description"
         ];
     
         foreach ($allowedFields as $field) {
@@ -86,10 +75,10 @@ class CageController {
             }
         }
         $fields["updatedAt"] = date('Y-m-d H:i:s');
-        
-        if ($this->cage->update($id,$fields)) {
-            $subspecies = $this->cage->getById($id);
-            response("success",true,$subspecies);
+
+        if ($this->birds->update($id,$fields)) {
+            $bird = $this->birds->getById($id);
+            response("success",true,$bird);
         } else {
             http_response_code(400);
             response("error",false,"");
@@ -97,7 +86,7 @@ class CageController {
     }
 
     public function delete($id) {
-        if ($this->cage->delete($id)) {
+        if ($this->birds->delete($id)) {
             response("status",true,intval($id));
         } else {
            http_response_code(400);

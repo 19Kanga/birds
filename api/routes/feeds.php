@@ -1,10 +1,10 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../controllers/SpeciesController.php';
+require_once __DIR__ . '/../controllers/FeedsController.php';
 
 $db = new Database();
 $conn = $db->getConnection();
-$speciesController = new SpeciesController($conn);
+$speciesController = new FeedsController($conn);
 
 $method = $_SERVER['REQUEST_METHOD'];
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Role.php';
 
 // var_dump($_POST);
 // var_dump($_FILES);
@@ -52,37 +53,81 @@ class UserController {
             ':status' => $_POST['status'] ?? 'active'
         ];
         $user = new User($this->db);
-        echo json_encode(['status' => $user->create($data),"message"=>"success","result"=>$data]);
+        if($user->create($data)){
+            $cleanParams = $user->findByEmail($_POST['email']);;
+          
+            unset($cleanParams["password"]);
+            
+            echo json_encode(['status' => true,"message"=>"success","result"=>$cleanParams]);
+        }else{
+            echo json_encode(['status' => false,"message"=>"error","result"=>[]]);
+        }
+        
     }
 
     public function update($id) {
-        // Récupère les données de la requête
-        parse_str(file_get_contents("php://input"), $_PUT);
-        
-        // Gère le fichier de profil si présent
-        $profilePath = isset($_FILES['profile']) ? $this->uploadImage($_FILES['profile']) : $_PUT['profile'];
-   
-        $data = [
-            ':id' => $id,
-            ':profile' => $profilePath,
-            ':fullname' => $_PUT['fullname'],
-            ':email' => $_PUT['email'],
-            ':roleId' => $_PUT['roleId'],
-            ':status' => $_PUT['status']
-        ];
-    
-        // Si un mot de passe est fourni, on le hache et on l'ajoute aux données
-        if (!empty($_PUT['password'])) {
-            $data[':password'] = password_hash($_PUT['password'], PASSWORD_BCRYPT);
-        } else {
-            // Si aucun mot de passe n'est fourni, on ne met pas à jour le champ du mot de passe
-            // On enlève la clé ':password' des données si elle est absente
-            unset($data[':password']);
+
+        $_PUT = json_decode(file_get_contents("php://input"), true);
+
+        $profilePath = null;
+
+        // Gérer le fichier s'il est uploadé
+        if (isset($_FILES['profile']) && $_FILES['profile']['error'] === UPLOAD_ERR_OK) {
+            $profilePath = $this->uploadImage($_FILES['profile']);
+        } elseif (isset($_PUT['profile'])) {
+            $profilePath = $_PUT['profile'];
         }
-    
+        
+        $fields = [];
+        $params = [':id' => $id];
+ 
+        if ($profilePath !== null && $profilePath !== '') {
+            $fields[] = "profile = :profile";
+            $params[':profile'] = $profilePath;
+        }
+        if (isset($_PUT['fullname']) && $_PUT['fullname'] !== '') {
+            $fields[] = "fullname = :fullname";
+            $params[':fullname'] = $_PUT['fullname'];
+        }
+        if (isset($_PUT['phone']) && $_PUT['phone'] !== '') {
+            $fields[] = "phone = :phone";
+            $params[':phone'] = $_PUT['phone'];
+        }
+        if (isset($_PUT['email']) && $_PUT['email'] !== '') {
+            $fields[] = "email = :email";
+            $params[':email'] = $_PUT['email'];
+        }
+        if (isset($_PUT['roleId'])) {
+            $fields[] = "roleId = :roleId";
+            $params[':roleId'] = $_PUT['roleId'];
+        } 
+        if (isset($_PUT['status'])) {
+            $fields[] = "status = :status";
+            $params[':status'] = $_PUT['status'];
+        }
+        if (isset($_PUT['password']) && $_PUT['password'] !== '') {
+            $fields[] = "password = :password";
+            $params[':password'] = password_hash($_PUT['password'], PASSWORD_BCRYPT);
+        }
+        $fields[] = "updatedAt = CURRENT_TIMESTAMP(3)";
+        
+        // $cleanParams = [];
+        // foreach ($params as $key => $value) {
+        //     $cleanKey = ltrim($key, ':');
+        //     $cleanParams[$cleanKey] = $value;
+        // }
         // Instancier l'objet User et appeler la méthode update
         $user = new User($this->db);
-        echo json_encode(['success' => $user->update($data)]);
+        $isOkay=$user->update($fields, $params);
+       if($isOkay){
+        $result=$user->getById($id);
+        unset($result['password'],$result['createAt']);
+        echo json_encode([
+            "status" => "success",
+            "message" => true,
+            "result" => $result
+        ]);
+       }
     }
     
 

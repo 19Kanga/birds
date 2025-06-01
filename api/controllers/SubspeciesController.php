@@ -1,46 +1,43 @@
 <?php
-require_once __DIR__ . '/../models/Cage.php';
+require_once __DIR__ . '/../models/Subspecies.php';
 require_once __DIR__ . '/../utils/generateUUId.php';
 require_once __DIR__ . '/../utils/response.php';
 
-class CageController {
-    private $cage;
+class SubspeciesController {
+    private $subspecies;
     private $pdo;
 
     public function __construct($db) {
-        $this->cage = new Cage($db);
-        $this->pdo= $db;
+        $this->subspecies = new Subspecies($db);
+        $this->pdo=$db;
     }
 
-    // Créer une cage
+    // Créer une espèce
     public function create($data) {
         try {
             $this->pdo->beginTransaction();
-           $this->cage->create($data);
+           $this->subspecies->create($data);
             $id = (int) $this->pdo->lastInsertId();
       
-            $uuid = generateUUID($id,"CG");
+            $uuid = generateUUID($id,"SUB");
          
-            $stmt = $this->pdo->prepare("UPDATE cages SET uuid = :uuid WHERE id = :id");
+            $stmt = $this->pdo->prepare("UPDATE subspecies SET uuid = :uuid WHERE id = :id");
             $stmt->execute([
                 'uuid' => $uuid,
                 'id'   => $id
             ]);
     
 
-            $result= $this->cage->getById($id);
+            $result= $this->subspecies->getById($id);
             $this->pdo->commit();
           
             echo json_encode(["status"=>"success","message"=>true,"result"=>[
                 'id'        => $id,
                 'uuid'      => $uuid,
                 'name'      => $data['name'],
-                'emplacement'     => $data['emplacement'],
-                'capacity'     => $data['capacity'],
-                'status'     => $data['status'],
-                'notes'    => $data['notes'],
-                'createdAt'    => $result['createdAt'],
-                'updatedAt'    => $result['updatedAt'],
+                'speciesId'     => $data['speciesId'],
+                'characteristiq'     => $data['characteristiq'],
+                'parent'    => $result['parent'],
             ]]);
     
         } catch (PDOException $e) {
@@ -50,34 +47,32 @@ class CageController {
         }
     }
 
-    // Obtenir toutes les cages
+    // Obtenir toutes les espèces
     public function getAll() {
-        $cageList = $this->cage->getAll();
-        response("success",true,$cageList);
+        $subSpeciesList = $this->subspecies->getAll();
+        // echo json_encode($speciesList);
+        response("success",true,$subSpeciesList);
     }
 
-    // Obtenir une cage par ID
+    // Obtenir une espèce par ID
     public function getById($id) {
-        $cage = $this->cage->getById($id);
-        if ($cage) {
-            response("success",true,$cage);
+        $subspecies = $this->subspecies->getById($id);
+        if ($subspecies) {
+            response("success",true,$subspecies);
         } else {
             http_response_code(404);
-            response("error",'Cage non trouvée',"");
+            response("error",false,"");
         }
     }
 
-    // Mettre à jour une cage
+    // Mettre à jour une espèce
     public function update($id,$data) {
-
+ 
         $fields=[];
         $allowedFields = [
             "name",
-            "capacity",
-            "emplacement" ,
-            "status",
-            "typeCage",
-            "notes"
+            "speciesId",
+            "characteristiq" ,
         ];
     
         foreach ($allowedFields as $field) {
@@ -85,25 +80,23 @@ class CageController {
                 $fields[$field] = $data[$field];
             }
         }
-        $fields["updatedAt"] = date('Y-m-d H:i:s');
         
-        if ($this->cage->update($id,$fields)) {
-            $subspecies = $this->cage->getById($id);
+        if ($this->subspecies->update($id,$fields)) {
+            $subspecies = $this->subspecies->getById($id);
             response("success",true,$subspecies);
         } else {
-            http_response_code(400);
+            http_response_code(500);
             response("error",false,"");
         }
     }
 
+    // Supprimer une espèce
     public function delete($id) {
-        if ($this->cage->delete($id)) {
-            response("status",true,intval($id));
+        if ($this->subspecies->delete($id)) {
+            response("success",true,intval($id));
         } else {
-           http_response_code(400);
+            http_response_code(500);
             response("error",false,"");
         }
     }
 }
-
-?>

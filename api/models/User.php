@@ -8,16 +8,23 @@ class User {
     }
 
     public function getAll() {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} ORDER BY createdAt desc");
+        $stmt = $this->conn->prepare("SELECT u.*,r.name as role FROM {$this->table} u, role r where u.roleId=r.id ORDER BY createdAt desc");
         $stmt->execute();
         return $stmt;
     }
 
     public function getOne($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = :id");
+        $stmt = $this->conn->prepare("SELECT u.*,r.name as role FROM {$this->table} u, role r where u.roleId=r.id and u.id = :id");
         $stmt->bindParam(':id', $id);
         $stmt->execute();
         return $stmt;
+    }
+
+    public function getById($id) {
+        $stmt = $this->conn->prepare("SELECT u.*,r.name as role FROM {$this->table} u, role r where u.roleId=r.id and u.id = :id");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function create($data) {
@@ -27,16 +34,8 @@ class User {
         return $stmt->execute($data);
     }
 
-    public function update($data) {
-        $stmt = $this->conn->prepare("UPDATE {$this->table} SET
-            profile = :profile,
-            fullname = :fullname,
-            email = :email,
-            password = :password,
-            roleId = :roleId,
-            status = :status,
-            updatedAt = CURRENT_TIMESTAMP(3)
-            WHERE id = :id");
+    public function update($fields,$data) {
+        $stmt = $this->conn->prepare("UPDATE {$this->table} SET " . implode(', ', $fields) . "WHERE id = :id");
         return $stmt->execute($data);
     }
 
@@ -47,7 +46,7 @@ class User {
     }
 
     public function findByEmail($email) {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE email = :email");
+        $stmt = $this->conn->prepare("SELECT u.*,r.name as role FROM {$this->table} u, role r where u.roleId=r.id and u.email = :email");
         $stmt->bindParam(':email', $email);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
